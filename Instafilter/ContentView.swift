@@ -13,36 +13,14 @@ import CoreImage.CIFilterBuiltins
 struct ContentView: View {
     @State private var image: Image?
     @State private var showingImagePicker = false
+    @State private var inputImage: UIImage?
     
     func loadImage() {
-        guard let inputImage = UIImage(named: "example") else { return }
-        let beginImage = CIImage(image: inputImage)
-        let context  = CIContext()
+        guard let inputImage = inputImage else { return }
+        image = Image(uiImage: inputImage)
         
-        let currentFilter = CIFilter.sepiaTone()
-        currentFilter.inputImage = beginImage
-        currentFilter.intensity = 1
-        
-        //        let currentFilter = CIFilter.pixellate()
-        //        currentFilter.inputImage = beginImage
-        //        currentFilter.scale = 100
-        
-        //  Causing error in SwiftUI
-        //        let currentFilter = CIFilter.crystallize()
-        //        currentFilter.setValue(beginImage, forKey: kCIInputImageKey)
-        //        currentFilter.radius = 200
-        
-        //        guard let currentFilter = CIFilter(name: "CITwirlDistortion") else { return }
-        //        currentFilter.setValue(beginImage, forKey: kCIInputImageKey)
-        //        currentFilter.setValue(2000, forKey: kCIInputRadiusKey)
-        //        currentFilter.setValue(CIVector(x: inputImage.size.width / 2, y: inputImage.size.height / 2), forKey: kCIInputCenterKey)
-        
-        guard let outputImage = currentFilter.outputImage else { return }
-        if let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
-            let uiImage = UIImage(cgImage: cgImage)
-            image = Image(uiImage: uiImage)
-        }
-        
+        let imageSaver = ImageSaver()
+        imageSaver.writeToPhotoAlbum(image: inputImage)
     }
     
     var body: some View {
@@ -55,9 +33,8 @@ struct ContentView: View {
                 self.showingImagePicker = true
             }
         }
-        .onAppear(perform: loadImage)
-        .sheet(isPresented: $showingImagePicker) {
-            ImagePicker()
+        .sheet(isPresented: $showingImagePicker, onDismiss: loadImage) {
+            ImagePicker(image: self.$inputImage)
         }
     }
 }
@@ -65,5 +42,15 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+class ImageSaver: NSObject {
+    func writeToPhotoAlbum(image: UIImage) {
+        UIImageWriteToSavedPhotosAlbum(image, self, #selector(saveImage), nil)
+    }
+    
+    @objc func saveImage(_ image:UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        print("Save finished!")
     }
 }
